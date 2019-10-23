@@ -2,4 +2,8 @@ dist/
 node_modules/
 npm-debug.log
 *.wav
-demo/data/
+demo/data/origin_audio
+demo/data/jieba_dict
+demo/data/audio
+demo/data/train_data.txt
+demo/data/train_label.txt
