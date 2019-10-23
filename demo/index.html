@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>語音管理儀表板</title>
+        <link href="https://fonts.googleapis.com/css?family=Josefin+Sans:300" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css?family=Muli" rel="stylesheet">
+        <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+        <script type="text/javascript">
+            function draw_barchart(){
+                var title="時段內來電:"+String(4)+"通  平均"+String(274)+"秒";
+                var chart = new CanvasJS.Chart("inner_bar", {
+                    width:600,
+                    height:400,
+                    backgroundColor: "rgba(0,0,0,0)",
+                    animationEnabled: true,
+                    theme: "light2", // "light1", "light2", "dark1", "dark2"
+                    title:{
+                        text: title
+                    },
+                    axisY: {
+                        title: "數量",
+                        suffix: "通"
+                    },
+                    data: [{        
+                        type: "stepArea",  
+                        markerSize: 5,
+                        xValueFormatString: "#\"時\"",
+                        yValueFormatString: "#,##\"通\"",
+                        dataPoints: [
+                        { y: 0, label: "9" },
+                        { y: 0,  label: "10" },
+                        { y: 2,  label: "11" },
+                        { y: 1,  label: "12" },
+                        { y: 1,  label: "13" },
+                        { y: 0, label: "14" },
+                        { y: 0, label: "15" },
+                        ]
+                    }]
+                });
+
+                chart.render();
+            }
+        </script>
+        <script>
+        </script>
+        <script src="http://d3js.org/d3.v3.min.js"></script>
+        <script src="http://yourjavascript.com/5414922491/cloud.js"></script>
+        <script>
+          function drawWordCloud(tmp){
+            var wordAndFreq={};
+            var keys=Object.keys(tmp);
+            console.log(keys)
+            for(var i=0;i<keys.length;++i){
+              if(tmp[keys[i]]["draw"]){
+                wordAndFreq[keys[i]]=tmp[keys[i]]["times"]+10.5;
+              }
+              else{
+                wordAndFreq[keys[i]]=(tmp[keys[i]]["times"]|0); //必大於1
+              }
+            }
+            var svg_location = "#cloud";
+            var width = parseInt($("#cloud").css('width'));
+            var height = parseInt($("#cloud").css('height'));
+            var fill = d3.scale.category20(); // 顏色範圍 D3內定義的20種顏色 此處會隨機調用20種中其中一種為文字上色
+            var linear_color = d3.scale.linear() // 自訂顏色範圍 根據權重比例決定顏色
+                //.domain([0,1,2,3,4,5,6,10,15,20,100]) // 原本的資料範圍
+                .domain([1,3,5,10,20,30,50,100])
+                //.range(["#ddd", "#ccc", "#bbb", "#aaa", "#999", "#888", "#777", "#666", "#555", "#444", "#333", "#222"]);
+                .range(["#222","#333","#444","#555","#666","#777","#888","#999","#aaa","#bbb","#ccc","#ddd"]); // 期望的資料範圍
+            
+            var ordinal_color = d3.scale.ordinal() // n個類別使用n種顏色
+                        .domain(0,0.1,0.2,0.3)
+                        .range(["#cc0000","#666666","#227700","#0000AA"]);
+            var word_entries = d3.entries(wordAndFreq);
+
+            var xScale = d3.scale.linear()
+               .domain([0, d3.max(word_entries, function(d) {
+                  return d.value;
+                })
+               ])
+               .range([12,72]);//字體的最小值與最大值
+
+            d3.layout.cloud().size([width, height]) //設定尺寸
+              .timeInterval(20)
+              .words(word_entries) //所有詞打包
+              .fontSize(function(d) { return xScale(+d.value); })
+              .text(function(d) { return d.key; })
+              //.rotate(function() { return ~~(Math.random() * 2) * 90; }) //只會旋轉0或90度
+              .rotate(function() { return 0 }) //不旋轉
+              //.rotate(function() { return (Math.random()-0.5)*180 ; }) // -180~180度間任意旋轉
+              // ~~(x) 等價於 Math.floor(x) 但執行速度稍快
+              .font("Impact")
+              .on("end", draw)
+              .start();
+            function draw(words) {
+              d3.select(svg_location).append("svg")
+                  .attr("width", width)
+                  .attr("height", height)
+                .append("g")
+                  .attr("transform", "translate(" + [width >> 1, height >> 1] + ")")
+                .selectAll("text")
+                  .data(words)
+                .enter().append("text")
+                  .style("font-size", function(d) { return xScale(d.value) + "px"; })
+                  .style("font-family", "Impact")
+                  .on('click', function (d) {
+                    var idx=Math.floor(Math.random()*7);
+                    var audio=["v1-right.wav","v2-right.wav","v2-right.wav","v2-right.wav","v3-right.wav","v3-right.wav","v4-right.wav","v4-right.wav"]
+                    if(d.value%1==0.5){
+                        window.alert("關鍵字「"+d.key+"」出現"+(d.value-10.5)+"次\n來自"+audio[Math.floor(Math.random()*7)]);
+                    }
+                    else{
+                        window.alert("關鍵字「"+d.key+"」出現"+d.value+"次\n來自"+audio[Math.floor(Math.random()*7)]);
+                    }
+                    
+
+                  })
+                  .on('mouseover', function () { console.log($(this).text()); }   )
+                  .style("fill",function(d){if(d.value%1==0){
+                                              return "hsl("+~~(Math.random()*360)+","+~~(Math.random()*70)+"%,60%)"
+                                            }
+                                            else if(d.value%1==0.5){ //med word
+                                              return "hsl(0, 100%, 40%)";
+                                            }
+                                           })
+                  .attr("text-anchor", "middle")
+                  .attr("transform", function(d) {
+                    if(d.value%1==0){
+                        return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+                    }
+                    else{
+                        //return "translate(" + [d.x, d.y] + ")";
+                        return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+                    }
+                    
+                  })
+                  .text(function(d) { return d.key; });
+                }
+                d3.layout.cloud().stop();
+            }
+            //source : http://bl.ocks.org/d3noob/8952219
+            function drawBar2(){
+              var margin = {top: 20, right: 20, bottom: 70, left: 40},
+                  width = 600 - margin.left - margin.right,
+                  height = 300 - margin.top - margin.bottom;
+              // Parse the date / time
+              var parseDate = d3.time.format("%Y-%m").parse;
+              var x = d3.scale.ordinal().rangeRoundBands([0, width], .05);
+              var y = d3.scale.linear().range([height, 0]);
+              var xAxis = d3.svg.axis()
+                  .scale(x)
+                  .orient("bottom")
+                  .tickFormat(d3.time.format("%Y-%m"));
+              var yAxis = d3.svg.axis()
+                  .scale(y)
+                  .orient("left")
+                  .ticks(10);
+              var svg = d3.select("#important_call").append("svg")
+                  .attr("width", width + margin.left + margin.right)
+                  .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                  .attr("transform", 
+                        "translate(" + margin.left + "," + margin.top + ")");
+              d3.csv("data/bar-data.csv", function(error, data) {
+                  data.forEach(function(d) {
+                      d.date = parseDate(d.date);
+                      d.value = +d.value;
+                  });
+                  
+                x.domain(data.map(function(d) { return d.date; }));
+                y.domain([0, d3.max(data, function(d) { return d.value; })]);
+                svg.append("g")
+                    .attr("class", "x axis")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(xAxis)
+                  .selectAll("text")
+                    .style("text-anchor", "end")
+                    .attr("dx", "-.8em")
+                    .attr("dy", "-.55em")
+                    .attr("transform", "rotate(-90)" );
+                svg.append("g")
+                    .attr("class", "y axis")
+                    .call(yAxis)
+                  .append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 6)
+                    .attr("dy", ".71em")
+                    .style("text-anchor", "end")
+                    .text("Value ($)");
+                svg.selectAll("bar")
+                    .data(data)
+                  .enter().append("rect")
+                    .style("fill", "steelblue")
+                    .attr("x", function(d) { return x(d.date); })
+                    .attr("width", x.rangeBand())
+                    .attr("y", function(d) { return y(d.value); })
+                    .on('click',function(d){window.alert(String(d.date)+String(d.value));})
+                    .attr("height", function(d) { return height - y(d.value); });
+              });
+            }
+        </script>
+        <script>
+          window.onload = function (){
+            draw_barchart();
+            var slider_start = document.getElementById("slider_start");
+            var slider_end = document.getElementById("slider_end");
+            var start = document.getElementById("start_time");
+            var end = document.getElementById("end_time");
+            var err = document.getElementById("errmessage");
+            var times=["4月9日","4月10日","4月11日","4月12日","4月13日","4月14日","4月15日","4月16日","4月17日","4月18日","4月19日","4月20日","4月21日","4月22日","4月23日","4月24日","4月25日","4月26日"];
+            start.innerHTML = times[Math.floor(slider_start.value/10)] ; // Display the default slider value
+            end.innerHTML = times[Math.floor(slider_end.value/10)] ;
+            slider_start.oninput = function() {
+              start.innerHTML=times[Math.floor(this.value/10)];
+              console.log(Math.floor(this.value/10));
+              console.log(Math.floor(this.value/10));
+              if(Math.floor(slider_start.value/10)>Math.floor(slider_end.value/10)){
+                  err.innerHTML= "無資料";
+              }
+              else{err.innerHTML= "";}
+            }
+            slider_end.oninput = function() {
+              end.innerHTML=times[Math.floor(this.value/10)];
+              if(Math.floor(slider_start.value/10)>Math.floor(slider_end.value/10)){
+                  err.innerHTML= "無資料";
+              }
+              else{err.innerHTML= "";}
+            }
+          }
+
+        </script>
+    </head>
+    <body>
+        <div id="navigator">
+            <div id="title">語音管理系統儀表板</div>
+            <div id="flip">功能列&#9660;</div>
+            <div id="panel"><div><a href="">回到首頁</a></div><div>查看個別通話</div><div>查看個別客服</div></div>
+        </div>
+        <div id="bar_chart" class="d0"><div id="inner_bar" style="left:7%;top:5%;position: relative;"></div></div>
+        <div id="cloud" class="d1"><div class="title">活躍關鍵字<div class="tooltip2">幫助<span class="tooltiptext">查看此通來電中經常出現的關鍵字<br>醫療相關字詞高亮並加權<br>點擊字詞查看更多</span></div></div></div>
+        <div id="emo_radar" class="d2"><div class="title">情緒雷達<div class="tooltip2">幫助<span class="tooltiptext">查看各客服的情緒指標<br>或顧客的情緒指標<br>點擊進行過濾
+        </span></div></div><div id="ser">客服通話情緒</div><canvas id="c1"></canvas><div id="cus">顧客通話情緒</div><canvas id="c2"></canvas></div>
+        <!--  <div id="time_choose" class="d5"><div class="title">時間選擇工具</div>
+
+          <div class="slidecontainer" style="width:80%;left:10%;position: absolute;top:30%">
+            <input type="range" min="1" max="170" value="50" class="slider" id="slider_start">
+          </div>
+          <div class="showtime1">起始時間: <span id="start_time"></span></div>
+          <div class="showtime2">結束時間: <span id="end_time"></span></div>
+          <div class="slidecontainer" style="width:80%;left:10%;position: absolute;top:55%;">
+            <input type="range" min="1" max="170" value="50" class="slider" id="slider_end">
+          </div>-->
+          <div id="errmessage"></div>
+        </div>
+        <div id="important_call" class="d3"><div class="title">重點來電摘要</div>
+
+        <div id="table">
+          <table border="2">
+          　<tr>
+          　<td>通話ID</td>
+          　<td>客服ID</td>
+            <td>時間</td>
+            <td>長度</td>
+            <td>關鍵字</td>
+          　</tr>
+          　<tr>
+          　<td>241</td>
+          　<td>3</td>
+            <td>2019/2/22 18:13</td>
+            <td>327秒</td>
+            <td>胃, 胃食道逆流</td>
+          　</tr>
+          　<tr>
+          　<td>268</td>
+          　<td>2</td>
+            <td>2019/2/22 21:20</td>
+            <td>25秒</td>
+            <td>男生, 運動</td>
+          　</tr>
+          　<tr>
+          　<td>318</td>
+          　<td>3</td>
+            <td>2019/2/23 09:40</td>
+            <td>400秒</td>
+            <td>醫院</td>
+          　</tr>
+          </table>
+        </div>
+      
+      </div><div class="tooltip2" style="position: absolute;left:95%;top:165%;pointer-events: auto;">幫助<span class="tooltiptext">查看一通電話內各情緒隨時間的變化<br>可自由縮放或點選</span></div>
+      
+        <div id="eventdrops" class="d4_big"><div class="title">情緒與關鍵字時間軸</div> 
+        <p class="infos">
+            <span id="numberCommits"></span> emotions <span>found between</span> <br />
+            <span id="zoomStart"  style="display:none"></span> <span class="light"  style="display:none">and</span> <span id="zoomEnd"  style="display:none"></span>
+        </p>
+        </div>
+
+    </body>
+</html>
